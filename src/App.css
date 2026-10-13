@@ -1,0 +1,14 @@
+@import "tailwindcss";
+
+@theme {
+    --color-button: #5545e5;
+    --color-button-neg: #b03030;
+    --color-button-pos: #31770e;
+    --color-button-mix: #b6761b;
+}
+
+#root {
+    box-sizing: border-box;
+    font-family: Bahnschrift, sans-serif;
+    height: 100dvh;
+}

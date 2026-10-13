@@ -1,0 +1,105 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="100%" height="100%" fill="none">
+  <defs>
+    <!-- Tiefes Datenbank-Lila -->
+    <linearGradient id="dbGrad" x1="60" y1="40" x2="160" y2="180" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#581C87" />
+      <stop offset="50%" stop-color="#3B0764" />
+      <stop offset="100%" stop-color="#1E0B36" />
+    </linearGradient>
+
+    <!-- Zylinder-Oberseite -->
+    <linearGradient id="dbTopGrad" x1="70" y1="35" x2="150" y2="65" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#7E22CE" />
+      <stop offset="100%" stop-color="#4C1D95" />
+    </linearGradient>
+
+    <!-- Helle, durchscheinende Glaslinse -->
+    <radialGradient id="glassLens" cx="40%" cy="38%" r="62%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.9" />
+      <stop offset="45%" stop-color="#E0F2FE" stop-opacity="0.82" />
+      <stop offset="85%" stop-color="#BAE6FD" stop-opacity="0.75" />
+      <stop offset="100%" stop-color="#7DD3FC" stop-opacity="0.85" />
+    </radialGradient>
+
+    <!-- Lupenrahmen-Verlauf -->
+    <linearGradient id="rimGrad" x1="80" y1="80" x2="160" y2="160" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#F1F5F9" />
+      <stop offset="35%" stop-color="#C084FC" />
+      <stop offset="100%" stop-color="#38BDF8" />
+    </linearGradient>
+
+    <!-- Warnsymbol-Verlauf -->
+    <linearGradient id="alertGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FB7185" />
+      <stop offset="100%" stop-color="#E11D48" />
+    </linearGradient>
+  </defs>
+
+  <!-- === GESCHWUNGENE NEON-DATENSTRÖME === -->
+  <g stroke-linecap="round" fill="none">
+    <!-- Äußerer roter/magenta Bogen (links) -->
+    <path d="M50 160 C15 155 10 105 45 95 C65 90 75 92 85 95" stroke="#E11D48" stroke-width="8" />
+    <path d="M50 160 C15 155 10 105 45 95 C65 90 75 92 85 95" stroke="#FB7185" stroke-width="4" />
+
+    <!-- Cyan-Neon-Schleife (unten links um die DB) -->
+    <path d="M40 180 C18 175 18 140 50 135 C70 130 90 132 105 136" stroke="#0891B2" stroke-width="8" />
+    <path d="M40 180 C18 175 18 140 50 135 C70 130 90 132 105 136" stroke="#00F2FE" stroke-width="4" />
+
+    <!-- Orange/Gelbe Schleife (rechts) -->
+    <path d="M145 75 C185 70 190 105 165 120" stroke="#EA580C" stroke-width="7" />
+    <path d="M145 75 C185 70 190 105 165 120" stroke="#FDBA74" stroke-width="3.5" />
+
+    <!-- Cyan-Schleife (oben rechts) -->
+    <path d="M140 60 C180 50 195 85 160 98" stroke="#0284C7" stroke-width="8" />
+    <path d="M140 60 C180 50 195 85 160 98" stroke="#38BDF8" stroke-width="4" />
+  </g>
+
+  <!-- === DATENBANK-ZYLINDER STACK === -->
+  <g stroke="#150524" stroke-width="7" stroke-linejoin="round">
+    <!-- Unterer Zylinder -->
+    <path d="M62 135 C62 152 158 152 158 135 V175 C158 192 62 192 62 175 Z" fill="url(#dbGrad)" />
+    <!-- Mittlerer Zylinder -->
+    <path d="M62 95 C62 112 158 112 158 95 V135 C158 152 62 152 62 135 Z" fill="url(#dbGrad)" />
+    <!-- Oberer Zylinder -->
+    <path d="M62 55 C62 72 158 72 158 55 V95 C158 112 62 112 62 95 Z" fill="url(#dbGrad)" />
+    <!-- Deckel -->
+    <ellipse cx="110" cy="55" rx="48" ry="16" fill="url(#dbTopGrad)" />
+  </g>
+
+  <!-- Server-LEDs auf der Datenbank -->
+  <circle cx="78" cy="100" r="3" fill="#00F2FE" />
+  <circle cx="78" cy="140" r="3" fill="#FB7185" />
+  <circle cx="78" cy="178" r="3" fill="#A855F7" />
+
+  <!-- === KOMPAKTERE LUPE MIT GLAS-OPTIK (Zentrum cx=120, cy=120, r=36) === -->
+  <!-- Lupenstiel -->
+  <g transform="rotate(42 120 120)">
+    <rect x="156" y="113" width="42" height="14" rx="7" fill="#150524" />
+    <rect x="158" y="115" width="36" height="10" rx="5" fill="#7C3AED" />
+    <rect x="160" y="116" width="32" height="3" rx="1.5" fill="#C084FC" opacity="0.7" />
+  </g>
+
+  <!-- Äußerer Rahmen der Lupe -->
+  <circle cx="120" cy="120" r="38" fill="url(#glassLens)" stroke="#150524" stroke-width="8" />
+  <circle cx="120" cy="120" r="34" stroke="url(#rimGrad)" stroke-width="3" />
+
+  <!-- Feine Log- / Scan-Linien hinter dem Glas -->
+  <g stroke-linecap="round" opacity="0.65">
+    <line x1="98" y1="102" x2="114" y2="102" stroke="#0284C7" stroke-width="3" />
+    <line x1="120" y1="102" x2="142" y2="102" stroke="#7C3AED" stroke-width="3" />
+    <line x1="96" y1="112" x2="110" y2="112" stroke="#E11D48" stroke-width="3" />
+    <line x1="130" y1="112" x2="144" y2="112" stroke="#F59E0B" stroke-width="3" />
+    <line x1="98" y1="134" x2="140" y2="134" stroke="#0284C7" stroke-width="3" />
+  </g>
+
+  <!-- Zentrales Warnsymbol im Glas -->
+  <g transform="translate(110, 107)">
+    <polygon points="10,0 20,18 0,18" fill="url(#alertGrad)" stroke="#150524" stroke-width="2.5" stroke-linejoin="round" />
+    <line x1="10" y1="5.5" x2="10" y2="11.5" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" />
+    <circle cx="10" cy="15" r="1.1" fill="#FFFFFF" />
+  </g>
+
+  <!-- Glas-Lichtreflexe (Glanzkante oben links & feine Gegenkante unten rechts) -->
+  <path d="M96 104 A26 26 0 0 1 134 94" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" opacity="0.85" />
+  <path d="M106 142 A26 26 0 0 0 138 134" stroke="#FFFFFF" stroke-width="1.8" stroke-linecap="round" opacity="0.45" />
+</svg>
