@@ -15,6 +15,7 @@ export interface Warning {
         | "Iterative Updates" | "Full Table Scan" | "Query Count" | "other",
     message:string,
     severity:Severity;
+    hint?:string;
 }
 
 export type RawWarning = Omit<Warning, "id">;
@@ -40,4 +41,4 @@ export function findPotentialProblems(queries:GroupedQueries|undefined):Warning[
 }
 
 // Backward-compatible alias
-export const findPotentiellProblems = findPotentialProblems;
+export const findPotentiellProblems = findPotentialProblems;

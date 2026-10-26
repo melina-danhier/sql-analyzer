@@ -26,7 +26,8 @@ export function checkNPlusOne(queries: SelectQuery[]): RawWarning[] {
         warnings.push({
             type: "N+1",
             message: `Table '${tableName}' received ${q} repeated SELECT queries${whereDetail}.`,
-            severity: s
+            severity: s,
+            hint: "Iterative single-row queries indicate missing eager fetching (JOIN FETCH, @EntityGraph) or batch fetching (@BatchSize)."
         });
     });
 
@@ -52,4 +53,3 @@ function mapByTableAndWhere(queries: SelectQuery[]) {
     }
     return map;
 }
-

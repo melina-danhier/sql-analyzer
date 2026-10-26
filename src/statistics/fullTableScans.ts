@@ -12,11 +12,11 @@ export function checkFullTableScans(queries:SelectQuery[]):RawWarning[] {
             warnings.push({
                 type: "Full Table Scan",
                 severity: severity.level1,
-                message: `An unbounded query (possible full table scan) was executed on table '${query.table}'.`
+                message: `An unbounded query (possible full table scan) was executed on table '${query.table}'.`,
+                hint: "SELECT without WHERE or LIMIT clause. Harmless for small lookup tables, but can trigger a full sequential table scan as data grows."
             });
         }
     });
 
     return warnings;
 }
-

@@ -18,10 +18,10 @@ export function checkMissingBatchingInsert(queries:InsertQuery[]):RawWarning[] {
         warnings.push({
             type: "Missing Batching",
             message: `Table '${t}' received ${q} INSERT queries.`,
-            severity: s
+            severity: s,
+            hint: "Repetitive individual INSERTs create unnecessary network round-trips. Enable JDBC batching (hibernate.jdbc.batch_size) or multi-row INSERTs."
         });
     });
 
     return warnings;
 }
-

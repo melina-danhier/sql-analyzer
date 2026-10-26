@@ -19,12 +19,11 @@ export function checkMutationWithoutFilter(
             warnings.push({
                 type: "Dangerous Statement",
                 severity: severity.level3,
-                message: "Statement without WHERE clause: " + query.raw
+                message: "Statement without WHERE clause: " + query.raw,
+                hint: "Unfiltered mutation affects all rows in the table. Ensure this table-wide operation is intentional."
             });
         }
     });
 
     return warnings;
 }
-
-

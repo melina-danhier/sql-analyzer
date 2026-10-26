@@ -25,7 +25,8 @@ export function checkIterativeUpdates(queries: UpdateQuery[]): RawWarning[] {
         warnings.push({
             type: "Iterative Updates",
             severity: s,
-            message: `Table '${tableName}' received ${q} iterative UPDATE queries with matching WHERE structure (${sampleWhere}).`
+            message: `Table '${tableName}' received ${q} iterative UPDATE queries with matching WHERE structure (${sampleWhere}).`,
+            hint: "Repetitive UPDATEs with matching filter criteria. Consider bulk UPDATE statements or reviewing ORM dirty checking."
         });
     });
 
@@ -51,4 +52,4 @@ function mapByTableAndWhere(queries: UpdateQuery[]) {
         }
     }
     return map;
-}
+}

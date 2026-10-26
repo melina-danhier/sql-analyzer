@@ -36,10 +36,9 @@ export function checkCountAll(queries:GroupedQueries|undefined):RawWarning[] {
         warnings.push({
             type: "Query Count",
             severity,
-            message: `${count} queries were executed.`
+            message: `${count} queries were executed.`,
+            hint: "High total query density for a single log trace. For a single HTTP request lifecycle, check for query amplification or missing caching."
         });
     }
     return warnings;
 }
-
-
