@@ -185,6 +185,36 @@ describe('findPotentialProblems', () => {
             expect(fullScanWarning!.message).toContain("'users'");
         });
 
+        it('correctly detects all anti-patterns in ecommerceIncident preset', () => {
+            const grouped = parseLogToGroupedQueries(presets.ecommerceIncident);
+            const warnings = findPotentialProblems(grouped);
+
+            expect(warnings).toBeDefined();
+
+            // 1. Full Table scan on customers
+            const fullScan = warnings!.find(w => w.type === 'Full Table Scan' && w.message.includes("'customers'"));
+            expect(fullScan).toBeDefined();
+
+            // 2. N+1 on orders and order_items
+            const nPlusOneOrders = warnings!.find(w => w.type === 'N+1' && w.message.includes("'orders'"));
+            const nPlusOneItems = warnings!.find(w => w.type === 'N+1' && w.message.includes("'order_items'"));
+            expect(nPlusOneOrders).toBeDefined();
+            expect(nPlusOneItems).toBeDefined();
+
+            // 3. Iterative updates on inventory
+            const iterativeUpdates = warnings!.find(w => w.type === 'Iterative Updates' && w.message.includes("'inventory'"));
+            expect(iterativeUpdates).toBeDefined();
+
+            // 4. Missing batching on audit_events
+            const missingBatching = warnings!.find(w => w.type === 'Missing Batching' && w.message.includes("'audit_events'"));
+            expect(missingBatching).toBeDefined();
+
+            // 5. Query count warning (total statements: 21 >= 20)
+            const queryCountWarning = warnings!.find(w => w.type === 'Query Count');
+            expect(queryCountWarning).toBeDefined();
+            expect(queryCountWarning!.severity.name).toBe('Minor');
+        });
+
         it('reports zero warnings for cleanBatch preset', () => {
             const grouped = parseLogToGroupedQueries(presets.cleanBatch);
             const warnings = findPotentialProblems(grouped);

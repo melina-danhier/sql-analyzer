@@ -18,6 +18,12 @@ export default function Presets({
             <h2 className="text-lg font-semibold">Presets</h2>
             <div className="flex flex-wrap gap-2 justify-center">
                 <Button
+                    text="Load E-Commerce Incident (Multi-Issue)"
+                    variant="danger"
+                    className="text-sm"
+                    onClick={():void => setPreset(presets.ecommerceIncident)}
+                />
+                <Button
                     text="Load Hibernate N+1 Scenario"
                     variant="danger"
                     className="text-sm"

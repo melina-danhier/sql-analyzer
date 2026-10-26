@@ -177,6 +177,11 @@ describe('Multi-line Statements & Hibernate Formats', () => {
         expect(cleanBatchResult.select).toHaveLength(2);
         expect(cleanBatchResult.select[0].table).toBe('users');
         expect(cleanBatchResult.select[1].table).toBe('orders');
+
+        const incidentResult = parseLogToGroupedQueries(presets.ecommerceIncident);
+        expect(incidentResult.select).toHaveLength(13); // 1 customers + 6 orders + 6 order_items
+        expect(incidentResult.update).toHaveLength(4);  // 4 inventory updates
+        expect(incidentResult.insert).toHaveLength(4);  // 4 audit_events inserts
     });
 
     it('handles various Hibernate logger prefixes with colons and hyphens', () => {

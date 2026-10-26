@@ -8,206 +8,144 @@
 [![Vite](https://img.shields.io/badge/Vite-8.x-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vite.dev/)
 [![GitHub Pages](https://img.shields.io/badge/GitHub_Pages-Live_Demo-2ea44f?style=for-the-badge&logo=github&logoColor=white)](https://melina-danhier.github.io/sql-analyzer/)
 
-A lightweight, client-side web application to inspect, analyze, and detect performance bottlenecks and dangerous queries in SQL and Hibernate logs.
+A high-performance, 100% client-side web application to detect database performance bottlenecks (N+1 queries, missing batching, iterative updates, full table scans) and dangerous mutations directly from raw SQL and Spring Boot / Hibernate log streams.
 
-🔗 **Live Demo:** [https://melina-danhier.github.io/sql-analyzer/](https://melina-danhier.github.io/sql-analyzer/)
+🚀 **Live Demo:** [https://melina-danhier.github.io/sql-analyzer/](https://melina-danhier.github.io/sql-analyzer/)  
+📖 **Realistic Scenario Deep-Dive:** [docs/SAMPLE_SCENARIO.md](./docs/SAMPLE_SCENARIO.md)  
+🔬 **Heuristics & Operational Boundaries Guide:** [docs/ANALYSIS_BOUNDARIES.md](./docs/ANALYSIS_BOUNDARIES.md)
+
+---
 
 ![SQL Analyzer Preview](./screenshot.png)
 
 ---
 
-## ⚠️ Problem Analysis: Why N+1 Queries in JPA/Hibernate Are Dangerous
+## 🎯 Quick Overview: The Problem & The Solution
 
-The **N+1 query problem** is one of the most common and critical performance bottlenecks in enterprise applications relying on ORM frameworks like **Hibernate** and **Spring Data JPA**.
+### The Problem: Silent Query Explosions in ORMs
+Modern Object-Relational Mappers like **Hibernate**, **Spring Data JPA**, and **Entity Framework** make data persistence intuitive, but abstract database operations behind high-level object graphs.
+- **The "Silent Killer" in Local Dev**: In local development with 5 mock records, accessing lazy-loaded associations in a loop executes 6 fast queries in ~3 ms and goes unnoticed.
+- **Outages Under Production Load**: In production with 500 customers, that same loop silently triggers **$1 + 500 = 501$ database round-trips**. This exhausts connection pools (e.g. HikariCP), adds seconds of network latency, and causes cascading timeouts.
+- **Tedious Log Inspection**: Production logs mix thousands of lines of timestamps, thread identifiers, and statements. Manually parsing and correlating queries across hundreds of lines is tedious, time-consuming, and error-prone.
 
-### How the Problem Arises
-1. **1 Initial Query**: The application retrieves a collection of $N$ parent entities (e.g., 100 users):
-   ```sql
-   SELECT * FROM users;
-   ```
-2. **N Additional Queries**: Accessing a lazily loaded association (e.g., calling `user.getOrders()` inside a loop or during JSON serialization) triggers Hibernate to execute an additional query for *each individual record*:
-   ```sql
-   SELECT * FROM orders WHERE user_id = ?; -- executed 100 times!
-   ```
-Instead of a single coordinated `JOIN` query, the application suddenly fires **$1 + 100 = 101$ database queries**.
-
-### Why It Is Fatal in Production
-- **The "Silent Killer" in Development**: With only 3–5 sample records in local databases, 4–6 fast queries take just a few milliseconds and go unnoticed. Under production load with thousands of records, the query count explodes instantly.
-- **Latency from Network Round-Trips**: Even with a low 1 ms ping between application server and database, 1,000 individual queries add at least one full second of pure idle network waiting time per HTTP request.
-- **Connection Pool Exhaustion (HikariCP)**: Hundreds of rapid consecutive queries saturate database connections. Under concurrent user traffic, this quickly leads to connection timeouts and cascading system downtime.
-- **Database Overhead**: Parsing, planning, and executing hundreds of small statements wastes significant CPU and I/O capacity on the database server.
-
-### How to Resolve N+1 Issues
-- Use **`JOIN FETCH`** in JPQL / HQL queries
-- Define **Entity Graphs** (`@EntityGraph`)
-- Enable **Batch Fetching** via `@BatchSize(size = ...)` or `hibernate.default_batch_fetch_size`
-- Employ **DTO Projections** for read-only use cases
+### The Solution: Zero-Install, Client-Side SQL Log Diagnostics
+**SQL Analyzer** provides instant clarity:
+1. **Paste any raw log stream** (Spring Boot `org.hibernate.SQL`, standard SQL, or multi-line logs).
+2. **Instant static heuristic analysis** classifies operations by table, normalizes aliases and parameters, and checks against 6 performance anti-pattern rules.
+3. **Actionable diagnostics**: Flags problems with severity ratings (`Critical`, `Moderate`, `Minor`), explains why the pattern is risky, and suggests concrete ORM and SQL fixes.
+4. **100% Client-Side Privacy**: Runs completely in the browser. Proprietary entity names, SQL structures, and business data never leave your local machine.
 
 ---
 
-## 🔬 Heuristic Analysis, Rules & Operational Boundaries
+## ✨ Key Features
 
-> [!IMPORTANT]
-> **Heuristic Static Indicators vs. Real-world Runtime Profiling**:
-> The SQL Analyzer operates purely on **static log patterns and query frequency**. It does not connect to a live database, execute `EXPLAIN` query plans, or measure real-time wall-clock latency (ms), I/O block reads, or connection pool wait events.
->
-> **Why this design is intentional**: Local runtime benchmarks on in-memory databases (e.g., H2) are deceptive: 100 N+1 queries might execute in 2 ms locally but cause production outages under load. Static pattern recognition uncovers the structural architectural flaw *before* code hits production.
+- 🧹 **Automated Log Sanitization**: Strips log prefixes (`Hibernate:`, timestamps, thread identifiers, log levels) and comments without breaking string literals or identifiers.
+- 🔍 **Static Anti-Pattern Heuristics**:
+  - **N+1 Query Detection**: Identifies repetitive `SELECT` queries on the same entity with matching parameter structures.
+  - **Dangerous Mutations**: Catches `UPDATE` and `DELETE` statements executing without a `WHERE` filter.
+  - **Missing Batching on INSERT**: Detects loops of single-row `INSERT` operations that should use batching.
+  - **Iterative Updates**: Flags repeated single-row updates with identical filter structures.
+  - **Full Table Scans / Unbounded Queries**: Warns about `SELECT` statements missing both `WHERE` filters and pagination clauses (`LIMIT`, `TOP`, `FETCH FIRST`).
+  - **Query Volume Spikes**: Alerts when query volume within a single request context exceeds safe thresholds.
+- 📊 **CRUD Operation Breakdown Matrix**: Visual table breaking down `SELECT`, `INSERT`, `UPDATE`, and `DELETE` volume per database table.
+- 📋 **One-Click Markdown Export**: Copies an executive markdown summary to your clipboard, ready for Jira tickets, PR reviews, or Slack incidents.
+- ⚡ **Interactive Demo Presets**: Includes 1-click real-world incident presets to explore the tool immediately without needing an external log file.
 
-For detailed German interview talking points and deep-dive technical reasoning, see the companion guide: [📖 docs/ANALYSIS_BOUNDARIES.md](./docs/ANALYSIS_BOUNDARIES.md).
+---
+
+## 🛠️ Tech Stack
+
+| Technology | Purpose |
+|---|---|
+| **[React 19](https://react.dev/)** | Reactive UI architecture, component state management, and modern hooks |
+| **[TypeScript 5](https://www.typescriptlang.org/)** | Strict type safety across AST parsing, query structures, and heuristic rules |
+| **[Vite 8](https://vite.dev/)** | Fast developer server and optimized client-side production bundling |
+| **[Tailwind CSS v4](https://tailwindcss.com/)** | Clean, responsive design with CSS-first configuration and dark-mode friendly accents |
+| **[Vitest](https://vitest.dev/)** | Fast test runner executing unit and integration test suites |
+| **[Testing Library](https://testing-library.com/)** | Accessible component and user-interaction verification |
+| **[GitHub Actions](https://github.com/features/actions)** | Automated CI/CD pipeline gating quality checks and deploying to GitHub Pages |
+
+---
+
+## 🏗️ Architecture & Processing Pipeline
+
+The entire analysis runs synchronously in the client browser, divided into 5 clear stages:
 
 ```mermaid
 flowchart TD
-    Log[SQL / Hibernate Log Input] --> Parser[SQL Parser & Sanitizer]
-    Parser --> Grouped[Grouped Queries: SELECT, INSERT, UPDATE, DELETE]
-    
-    Grouped --> R1["N+1 Query Rule (Repeated SELECTs)"]
-    Grouped --> R2["Dangerous Mutation Rule (UPDATE/DELETE without WHERE)"]
-    Grouped --> R3["Missing Batching Rule (Frequent INSERTs)"]
-    Grouped --> R4["Iterative Updates Rule (Matching Filter Structure)"]
-    Grouped --> R5["Full Table Scan Rule (Unbounded SELECT)"]
-    Grouped --> R6["Query Count Rule (Volumetric Threshold)"]
-    
-    R1 --> Output[Aggregated Warnings with Severity & Actionable Context]
-    R2 --> Output
-    R3 --> Output
-    R4 --> Output
-    R5 --> Output
-    R6 --> Output
+    A["Raw Log Input (Spring Boot / SQL)"] --> B["Stage 1: Pre-Processing & Sanitization"]
+    B --> C["Stage 2: Lexing & Statement Splitting"]
+    C --> D["Stage 3: AST Normalization & Entity Extraction"]
+    D --> E["Stage 4: Heuristic Rules Evaluation"]
+    D --> F["Stage 5: Aggregation & Metrics Engine"]
+    E --> G["Reactive UI Dashboard"]
+    F --> G
+    G --> H["1-Click Markdown Export"]
+
+    subgraph "Stage 4: Heuristic Rules"
+        R1["N+1 Query Rule"]
+        R2["Dangerous Mutation Rule"]
+        R3["Missing Batching Rule"]
+        R4["Iterative Updates Rule"]
+        R5["Full Table Scan Rule"]
+        R6["Query Count Rule"]
+    end
+    E --- R1 & R2 & R3 & R4 & R5 & R6
 ```
 
-### Detailed Rule Catalog
-
-#### 1. N+1 Query Detection (`checkNPlusOne`)
-- **Pattern Recognized**: Multiple `SELECT` queries executed against the same table with matching normalized `WHERE` filter structures.
-  - Normalization removes table aliases (e.g. `o1_0.customer_id` $\rightarrow$ `customer_id`), collapses `IN (?, ?, ?)` to `IN (?)`, masks literals and numbers with `?`, and strips whitespace.
-- **Severity Thresholds**:
-  - `Minor` (Level 1): $\ge 3$ repeated queries
-  - `Moderate` (Level 2): $\ge 6$ repeated queries
-  - `Critical` (Level 3): $\ge 10$ repeated queries
-- **Hit Example (Treffer)**:
-  ```sql
-  SELECT id, total FROM orders WHERE customer_id = 101;
-  SELECT id, total FROM orders WHERE customer_id = 102;
-  SELECT id, total FROM orders WHERE customer_id = 103;
-  ```
-  *Result*: Flags table `'orders'` with 3 repeated queries matching `WHERE (customer_id = ?)`.
-- **Non-Hit Example (Nicht-Treffer)**:
-  ```sql
-  -- Efficient batch fetch using IN list (single query):
-  SELECT id, total, customer_id FROM orders WHERE customer_id IN (101, 102, 103);
-  -- Queries on different tables or with completely different filter structures:
-  SELECT id, name FROM customers WHERE id = 101;
-  SELECT id, total FROM orders WHERE status = 'COMPLETED';
-  ```
-- **Boundaries, Complex SQL & Potential False Positives**:
-  - *False Positive*: Intentional client polling or distinct independent business requests logged together.
-  - *Complex SQL Limitation*: Subqueries or inverted WHERE condition order (`WHERE a = ? AND b = ?` vs `WHERE b = ? AND a = ?`) will not be treated as identical without full AST parsing.
+### Detailed Pipeline Flow:
+1. **Pre-Processing & Sanitization (`cleanRawLog`, `stripComments`)**:
+   - Strips application log prefixes (e.g. `2026-10-26T14:02:10 DEBUG 14208 --- [nio-8080-exec-4] org.hibernate.SQL :`).
+   - Removes single-line (`--`) and multi-line (`/* */`) comments while protecting semicolons and comments within quoted string literals (`'...'`).
+2. **Lexing & CRUD Classification (`splitStatements`, `parseLogToGroupedQueries`)**:
+   - Splits statements on valid statement boundaries (semicolons outside quotes).
+   - Classifies queries into dedicated buckets: `SELECT`, `INSERT`, `UPDATE`, `DELETE`.
+3. **AST Normalization & Entity Extraction (`extractTable`, `extractWhereClause`)**:
+   - Identifies target tables, safely stripping quotes (`"table"`, `` `table` ``, `[table]`) and schemas (`public.users`).
+   - Normalizes table aliases (e.g. `o1_0.customer_id` $\rightarrow$ `customer_id`) and masks literals (`WHERE id = 42` $\rightarrow$ `WHERE id = ?`).
+4. **Heuristic Rules Evaluation (`findPotentialProblems`)**:
+   - Evaluates the normalized queries against 6 independent rules with multi-tiered severity scoring (`Minor`, `Moderate`, `Critical`).
+5. **Aggregation & Visualization (`countTypes`, `groupAndCountByTable`)**:
+   - Synthesizes operation statistics per table and populates the dashboard, warnings panel, and clipboard export.
 
 ---
 
-#### 2. Dangerous Statement / Mutation Without Filter (`checkMutationWithoutFilter`)
-- **Pattern Recognized**: An `UPDATE` or `DELETE` query executed without a `WHERE` clause (checked via parsed AST properties and regex on SQL text stripped of comments and string literals).
-- **Severity**: Always `Critical` (Level 3).
-- **Hit Example (Treffer)**:
-  ```sql
-  DELETE FROM sessions;
-  UPDATE user_accounts SET is_active = false;
-  ```
-- **Non-Hit Example (Nicht-Treffer)**:
-  ```sql
-  DELETE FROM sessions WHERE expires_at < NOW();
-  UPDATE user_accounts SET is_active = false WHERE failed_attempts >= 5;
-  -- String literals containing the word 'where' are ignored:
-  UPDATE articles SET title = 'Where is the documentation?' WHERE id = 1;
-  ```
-- **Boundaries, Complex SQL & Potential False Positives**:
-  - *False Positive*: Intentional maintenance operations (e.g. purging staging or temporary tables: `DELETE FROM staging_import;`).
-  - *Complex SQL Limitation*: `TRUNCATE TABLE` is a DDL command and not classified as `DELETE`. Tautological filters like `WHERE 1=1` are syntactically present, so they bypass this rule.
+## 🛒 Realistic Example Scenario: E-Commerce Incident
+
+Clicking **"Load E-Commerce Incident (Multi-Issue)"** in the app loads a real-world Spring Boot log snippet simulating a customer order checkout workflow:
+
+```log
+2026-10-26T14:02:10.120+01:00 DEBUG 14208 --- [nio-8080-exec-4] org.hibernate.SQL : select c1_0.id, c1_0.email, c1_0.full_name, c1_0.status from customers c1_0
+Hibernate: select o1_0.id, o1_0.created_at, o1_0.status, o1_0.total_amount, o1_0.customer_id from orders o1_0 where o1_0.customer_id=?
+... (repeated 6x)
+Hibernate: select oi1_0.id, oi1_0.order_id, oi1_0.product_id, oi1_0.quantity, oi1_0.price from order_items oi1_0 where oi1_0.order_id=?
+... (repeated 6x)
+Hibernate: update inventory set stock_count=?, reserved_count=? where product_id=?
+... (repeated 4x)
+Hibernate: insert into audit_events (action, entity_id, user_id, timestamp) values (?, ?, ?, ?)
+... (repeated 4x)
+```
+
+### Analysis Output at a Glance:
+
+| Detected Issue | Target Table | Severity | What Was Detected |
+|---|---|---|---|
+| **N+1 Query Bottleneck** | `orders` | **Moderate** (Level 2) | 6 repeated `SELECT` queries with `WHERE customer_id=?` |
+| **N+1 Query Bottleneck** | `order_items` | **Moderate** (Level 2) | 6 repeated `SELECT` queries with `WHERE order_id=?` |
+| **Iterative Updates** | `inventory` | **Minor** (Level 1) | 4 repetitive single-record `UPDATE` queries |
+| **Missing Batching** | `audit_events` | **Minor** (Level 1) | 4 unbatched single-record `INSERT` queries |
+| **Full Table Scan** | `customers` | **Minor** (Level 1) | `SELECT` without `WHERE` filter or `LIMIT` clause |
+| **Query Volume Warning** | *Global* | **Minor** (Level 1) | 21 database queries executed within a single request |
+
+For the complete architectural walkthrough, root-cause JPA code examples, and Spring configuration fixes, see [📖 docs/SAMPLE_SCENARIO.md](./docs/SAMPLE_SCENARIO.md).
 
 ---
 
-#### 3. Missing Batching on INSERT (`checkMissingBatchingInsert`)
-- **Pattern Recognized**: High frequency of single-row `INSERT` statements targeting the same table.
-- **Severity Thresholds**:
-  - `Minor` (Level 1): $\ge 3$ inserts
-  - `Moderate` (Level 2): $\ge 6$ inserts
-  - `Critical` (Level 3): $\ge 10$ inserts
-- **Hit Example (Treffer)**:
-  ```sql
-  INSERT INTO audit_log (action, user_id) VALUES ('LOGIN', 10);
-  INSERT INTO audit_log (action, user_id) VALUES ('SEARCH', 10);
-  INSERT INTO audit_log (action, user_id) VALUES ('LOGOUT', 10);
-  ```
-- **Non-Hit Example (Nicht-Treffer)**:
-  ```sql
-  -- Multi-row batch insert:
-  INSERT INTO audit_log (action, user_id) VALUES 
-      ('LOGIN', 10), ('SEARCH', 10), ('LOGOUT', 10);
-  -- Less than 3 inserts:
-  INSERT INTO users (id, name) VALUES (1, 'Alice');
-  ```
-- **Boundaries, Complex SQL & Potential False Positives**:
-  - *False Positive*: Inserts executed minutes apart by separate user threads in an aggregated server log cannot be batched across independent HTTP requests.
-  - *ORM Limitation (`GenerationType.IDENTITY`)*: When using JPA identity ID generation, Hibernate disables batching by design to immediately read generated IDs via JDBC `getGeneratedKeys()`.
+## 🔬 Heuristic Rules & Operational Boundaries
 
----
-
-#### 4. Iterative Updates (`checkIterativeUpdates`)
-- **Pattern Recognized**: Repeated single-record `UPDATE` queries on the same table with matching normalized `WHERE` filter structures.
-- **Severity Thresholds**:
-  - `Minor` (Level 1): $\ge 3$ updates
-  - `Moderate` (Level 2): $\ge 5$ updates
-  - `Critical` (Level 3): $\ge 9$ updates
-- **Hit Example (Treffer)**:
-  ```sql
-  UPDATE inventory SET stock = 10 WHERE item_id = 1;
-  UPDATE inventory SET stock = 15 WHERE item_id = 2;
-  UPDATE inventory SET stock = 20 WHERE item_id = 3;
-  ```
-- **Non-Hit Example (Nicht-Treffer)**:
-  ```sql
-  -- Set-based bulk update in a single query:
-  UPDATE inventory SET stock = stock - 1 WHERE category_id = 5;
-  ```
-- **Boundaries, Complex SQL & Potential False Positives**:
-  - *False Positive*: Updating different sets of fields on different entities via JPA dirty checking in a long transaction.
-  - *Architectural Trade-off*: Bulk updates in JPQL bypass the Hibernate 1st-level cache and optimistic locking (`@Version`). Developers sometimes intentionally use iterative updates to preserve cache coherency and version checks.
-
----
-
-#### 5. Full Table Scans / Unbounded Queries (`checkFullTableScans`)
-- **Pattern Recognized**: A `SELECT` query lacking both a `WHERE` filter and pagination/limiting keywords (`LIMIT`, `TOP`, `FETCH FIRST/NEXT`).
-- **Severity**: `Minor` (Level 1).
-- **Hit Example (Treffer)**:
-  ```sql
-  SELECT id, name, email FROM customers;
-  SELECT * FROM audit_events;
-  ```
-- **Non-Hit Example (Nicht-Treffer)**:
-  ```sql
-  SELECT id, name FROM customers WHERE is_active = true;
-  SELECT id, name FROM customers ORDER BY created_at DESC LIMIT 50;
-  SELECT TOP 20 * FROM audit_events;
-  SELECT * FROM customers OFFSET 0 ROWS FETCH NEXT 25 ROWS ONLY;
-  ```
-- **Boundaries, Complex SQL & Potential False Positives**:
-  - *False Positive (Lookup Tables)*: For small static dictionary tables (e.g. `countries` with 195 rows), a full table scan is the fastest and optimal access path chosen by the database Cost-Based Optimizer (CBO), outperforming index scans.
-  - *False Negative (Unindexed Filter)*: `SELECT * FROM big_table WHERE unindexed_col = 'xyz'` passes this rule, yet causes a 100% full table scan in the database engine.
-
----
-
-#### 6. Overall Query Count (`checkCountAll`)
-- **Pattern Recognized**: Total volumetric count of all statements (`SELECT` + `INSERT` + `UPDATE` + `DELETE`) in the analyzed input.
-- **Severity Thresholds**:
-  - `Minor` (Level 1): $\ge 20$ queries
-  - `Moderate` (Level 2): $\ge 40$ queries
-  - `Critical` (Level 3): $\ge 80$ queries
-- **Hit Example (Treffer)**: A log snippet containing 25 queries.
-- **Non-Hit Example (Nicht-Treffer)**: A log snippet containing 15 queries.
-- **Boundaries, Complex SQL & Potential False Positives**:
-  - *Context Sensitivity*: 25 queries inside a single HTTP request lifecycle is an urgent performance risk. Conversely, 80 queries inside a multi-step background ETL synchronization is normal and benign.
-
----
+> [!IMPORTANT]
+> **Static Log Heuristics vs. Live Profiling**:
+> SQL Analyzer analyzes query frequencies and structural log patterns without requiring database credentials. It does not measure wall-clock latency (ms) or parse database `EXPLAIN` query plans. This is an intentional design choice: structural flaws are caught before code reaches production environments.
 
 ### Comparison & Reference Matrix
 
@@ -220,100 +158,66 @@ flowchart TD
 | **Full Table Scan** | Minor | `SELECT` without `WHERE` or `LIMIT` | 1 query | Small lookup/code tables | Add `LIMIT`, `FETCH FIRST`, or pagination |
 | **Query Count** | Minor $\rightarrow$ Critical | Total queries across all types | $\ge 20 / 40 / 80$ | Long log traces, batch jobs | Second-level caching, DTO projections |
 
----
-
-## ✨ Features
-
-- **Automated Log Parsing**:
-  - Supports raw SQL logs as well as Spring Boot / Hibernate logs (both single-line and formatted multi-line logs with `format_sql=true`).
-  - Automatically strips log metadata prefixes (timestamps, thread identifiers, `Hibernate:`, `org.hibernate.SQL`).
-
-- **Performance & Anti-Pattern Detection**:
-  - **N+1 Query Detection**: Identifies repeated `SELECT` statements executed against the same table with matching `WHERE` filter structures.
-  - **Dangerous Statements**: Highlights high-risk `UPDATE` and `DELETE` operations executed without a `WHERE` clause.
-  - **Missing Batching**: Flags loops of individual `INSERT` statements that should be batched together.
-  - **Iterative Updates**: Detects repetitive single-record updates with normalized filter structures.
-  - **Full Table Scans / Unbounded Queries**: Warns about unbounded `SELECT` queries missing `WHERE` filters or `LIMIT` clauses.
-  - **Query Count Warning**: Alerts when overall query traffic exceeds safe thresholds.
-
-- **Breakdown by Table**:
-  - Clear summary matrix categorizing CRUD operations (`SELECT`, `INSERT`, `UPDATE`, `DELETE`) per database table.
-
-- **Presets**:
-  - Quick-load realistic sample scenarios (*Hibernate N+1 Scenario*, *Clean Batch Query*) to test immediately.
-
-- **Export & Copy**:
-  - One-click button to export the full analysis summary formatted as clean, Markdown-ready text.
-
----
-
-## 🛠️ Tech Stack
-
-- **Framework**: [React 19](https://react.dev/)
-- **Language**: [TypeScript](https://www.typescriptlang.org/)
-- **Bundler & Dev Server**: [Vite](https://vite.dev/)
-- **Styling**: [Tailwind CSS v4](https://tailwindcss.com/)
-- **Testing**: [Vitest](https://vitest.dev/) & [React Testing Library](https://testing-library.com/)
+For deep-dive documentation on heuristic edge cases and operational boundaries, see [📖 docs/ANALYSIS_BOUNDARIES.md](./docs/ANALYSIS_BOUNDARIES.md).
 
 ---
 
 ## 🚀 Getting Started
 
 ### Prerequisites
-
-Ensure you have [Node.js](https://nodejs.org/) (version 18+ recommended) installed.
+- [Node.js](https://nodejs.org/) (v18 or higher recommended)
+- `npm` (included with Node.js)
 
 ### Installation
+```bash
+git clone https://github.com/melina-danhier/sql-analyzer.git
+cd sql-analyzer
+npm install
+```
 
-1. Clone or download the repository.
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-### Running the Development Server
-
+### Running Locally
 ```bash
 npm run dev
 ```
-Open the URL printed in the terminal (usually `http://localhost:5173`).
+Open [http://localhost:5173](http://localhost:5173) in your browser.
 
-### Code Quality & Verification Commands
+---
 
-All quality gates run automatically in CI on every Pull Request and push to `main`. You can run each check individually or together locally:
+## 🧪 Quality Gates & Verification Commands
+
+All quality gates run in CI on every push and pull request:
 
 | Command | Tool | Purpose |
 |---|---|---|
-| `npm run lint` | ESLint | Checks code style, React hooks rules, and imports |
-| `npm run typecheck` | TypeScript compiler (`tsc`) | Validates types without emitting files |
-| `npm test` | Vitest & React Testing Library | Executes unit and component tests |
-| `npm run test:watch` | Vitest | Runs tests continuously during development |
-| `npm run build` | Vite + TypeScript | Type-checks and creates the production bundle in `dist/` |
+| `npm run lint` | ESLint 10 | Validates TypeScript styling, React hooks, and clean syntax |
+| `npm run typecheck` | TypeScript Compiler (`tsc`) | Validates types without emitting artifacts |
+| `npm test` | Vitest & Testing Library | Executes the automated test suite (128+ tests) |
+| `npm run test:watch` | Vitest | Runs tests in watch mode during development |
+| `npm run build` | Vite + TypeScript | Compiles and builds the production bundle in `dist/` |
 
-#### Run All Checks Locally
-To verify your changes before pushing or opening a PR:
+### Run Full Verification Suite Locally:
 ```bash
-npm run lint; npm run typecheck; npm test; npm run build
+npm run lint && npm run typecheck && npm test && npm run build
 ```
 
 ---
 
 ## 🤖 Continuous Integration & Deployment (CI/CD)
 
-The project leverages automated GitHub Actions workflows to guarantee code quality and safe releases:
+The repository uses automated GitHub Actions workflows:
 
 1. **Continuous Integration (`.github/workflows/ci.yml`)**:
-   - Triggers on every **Pull Request** and **Push** targeting `main`, as well as manual dispatches.
-   - Enforces a clean pipeline executing **ESLint**, **TypeScript type checking**, **Vitest test suite**, and **Production build**.
-   - Prevents regressions and failing code from entering the default branch.
+   - Triggers on every **Pull Request** and **Push** to `main`.
+   - Executes ESLint, TypeScript Typecheck, Vitest, and Production Build in parallel.
+   - Prevents failing code from merging into the default branch.
 
 2. **Automated Deployment (`.github/workflows/deploy.yml`)**:
-   - Triggers on pushes to `main`.
-   - Re-verifies all quality checks (ESLint, Type Check, Tests, Build).
-   - Only publishes the build artifact to **GitHub Pages** if all quality gates pass successfully.
+   - Triggers on merges to `main`.
+   - Re-verifies all quality gates before uploading the production bundle to **GitHub Pages**.
+   - Hosted at: [https://melina-danhier.github.io/sql-analyzer/](https://melina-danhier.github.io/sql-analyzer/)
 
 ---
 
 ## 📄 License
 
-MIT
+MIT © [Melina Danhier](https://github.com/melina-danhier)
