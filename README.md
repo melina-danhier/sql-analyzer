@@ -74,6 +74,7 @@ Instead of a single coordinated `JOIN` query, the application suddenly fires **$
 - **Language**: [TypeScript](https://www.typescriptlang.org/)
 - **Bundler & Dev Server**: [Vite](https://vite.dev/)
 - **Styling**: [Tailwind CSS v4](https://tailwindcss.com/)
+- **Testing**: [Vitest](https://vitest.dev/) & [React Testing Library](https://testing-library.com/)
 
 ---
 
@@ -97,6 +98,25 @@ Ensure you have [Node.js](https://nodejs.org/) (version 18+ recommended) install
 npm run dev
 ```
 Open the URL printed in the terminal (usually `http://localhost:5173`).
+
+### Running Tests
+
+Execute the test suite (single run):
+```bash
+npm test
+```
+
+Run tests in watch mode during development:
+```bash
+npm run test:watch
+```
+
+### Linting
+
+Check code quality and type conventions with ESLint:
+```bash
+npm run lint
+```
 
 ### Building for Production
 
