@@ -1,5 +1,7 @@
 # SQL Analyzer 🔍
 
+[![CI](https://github.com/melina-danhier/sql-analyzer/actions/workflows/ci.yml/badge.svg)](https://github.com/melina-danhier/sql-analyzer/actions/workflows/ci.yml)
+[![Deploy to GitHub Pages](https://github.com/melina-danhier/sql-analyzer/actions/workflows/deploy.yml/badge.svg)](https://github.com/melina-danhier/sql-analyzer/actions/workflows/deploy.yml)
 [![React](https://img.shields.io/badge/React-19-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4.x-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
@@ -99,32 +101,39 @@ npm run dev
 ```
 Open the URL printed in the terminal (usually `http://localhost:5173`).
 
-### Running Tests
+### Code Quality & Verification Commands
 
-Execute the test suite (single run):
+All quality gates run automatically in CI on every Pull Request and push to `main`. You can run each check individually or together locally:
+
+| Command | Tool | Purpose |
+|---|---|---|
+| `npm run lint` | ESLint | Checks code style, React hooks rules, and imports |
+| `npm run typecheck` | TypeScript compiler (`tsc`) | Validates types without emitting files |
+| `npm test` | Vitest & React Testing Library | Executes unit and component tests |
+| `npm run test:watch` | Vitest | Runs tests continuously during development |
+| `npm run build` | Vite + TypeScript | Type-checks and creates the production bundle in `dist/` |
+
+#### Run All Checks Locally
+To verify your changes before pushing or opening a PR:
 ```bash
-npm test
+npm run lint && npm run typecheck && npm test && npm run build
 ```
 
-Run tests in watch mode during development:
-```bash
-npm run test:watch
-```
+---
 
-### Linting
+## 🤖 Continuous Integration & Deployment (CI/CD)
 
-Check code quality and type conventions with ESLint:
-```bash
-npm run lint
-```
+The project leverages automated GitHub Actions workflows to guarantee code quality and safe releases:
 
-### Building for Production
+1. **Continuous Integration (`.github/workflows/ci.yml`)**:
+   - Triggers on every **Pull Request** and **Push** targeting `main`, as well as manual dispatches.
+   - Enforces a clean pipeline executing **ESLint**, **TypeScript type checking**, **Vitest test suite**, and **Production build**.
+   - Prevents regressions and failing code from entering the default branch.
 
-Type-check and produce the optimized production build:
-```bash
-npm run build
-```
-The production bundle will be generated in the `dist/` directory.
+2. **Automated Deployment (`.github/workflows/deploy.yml`)**:
+   - Triggers on pushes to `main`.
+   - Re-verifies all quality checks (ESLint, Type Check, Tests, Build).
+   - Only publishes the build artifact to **GitHub Pages** if all quality gates pass successfully.
 
 ---
 
