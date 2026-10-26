@@ -20,14 +20,14 @@ export function getSeverity(severityCount:SeverityQueriesCount,queriesCount:numb
 }
 
 export function normalizeWhereClause(line: string | undefined): string | undefined {
-    if (!line) return undefined;
+    if (!line || line.trim().length === 0) return undefined;
     return line.toLowerCase()
         // Tabellen-Aliase vor Spalten entfernen (z. B. "t1_0.id" -> "id")
         .replace(/\b[a-z0-9_]+\.([a-z0-9_]+)/g, "$1")
         // In-Listen normalisieren: in (?, ?, ?) -> in (?)
         .replace(/in\s*\([^)]*\)/g, "in (?)")
         // String-Literale maskieren ('admin@example.com' -> ?)
-        .replace(/'[^']*'/g, "?")
+        .replace(/'(?:''|[^'])*'/g, "?")
         // Zahlenwerte maskieren (= 42 -> = ?)
         .replace(/\b\d+\b/g, "?")
         // Whitespaces vereinheitlichen

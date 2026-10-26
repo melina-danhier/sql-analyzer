@@ -6,8 +6,9 @@ export function checkFullTableScans(queries:SelectQuery[]):RawWarning[] {
     const warnings:RawWarning[] = [];
 
     queries.forEach((query:SelectQuery) => {
-        const limitExists:boolean = /\b(limit\b|fetch\s+first\b|top\s+\d+)/i.test(query.raw);
-        if (!limitExists && !query.where) {
+        const limitExists:boolean = /\b(limit\b|fetch\s+(?:first|next)\b|top\s*\(?\d+\)?)/i.test(query.raw);
+        const hasWhere:boolean = Boolean(query.where && query.where.trim().length > 0);
+        if (!limitExists && !hasWhere) {
             warnings.push({
                 type: "Full Table Scan",
                 severity: severity.level1,

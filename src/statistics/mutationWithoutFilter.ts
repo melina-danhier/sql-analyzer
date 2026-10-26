@@ -9,8 +9,12 @@ export function checkMutationWithoutFilter(
     const warnings:RawWarning[] = [];
 
     queries.forEach((query:UpdateQuery|DeleteQuery):void => {
+        const cleanRaw = query.raw
+            .replace(/--.*$/gm, "")
+            .replace(/\/\*[\s\S]*?\*\//g, "")
+            .replace(/'(?:''|[^'])*'/g, "");
         const hasFilter:boolean = Boolean(query.where && query.where.trim().length > 0)
-            || /\bwhere\b/i.test(query.raw);
+            || /\bwhere\b/i.test(cleanRaw);
         if (!hasFilter) {
             warnings.push({
                 type: "Dangerous Statement",
